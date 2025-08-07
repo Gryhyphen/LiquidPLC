@@ -2,15 +2,44 @@ local fun = require "fun"
 local _ = require "lodash" -- LuaLodash
 
 
-local function generateConfig(transposer, itemInputSideId)
-    local configSideId = 1 -- 'top' is always config chest
-    local size = transposer.getInventorySize(configSideId)
+local CONFIG_SIDE_ID = 1 -- top is always the config
+
+local function discoverSides(transposer)
+    -- cubes have 6 sides we need to check
+    return fun.range(0, 5)
+        :map(function(x)
+            local name, err = transposer.getInventoryName(x)
+            if err ~= nil then
+                return nil -- skip sides with no inventory
+            end
+            return { sideId = x, name = name }
+        end)
+        :filter(function(x) return x ~= nil end)
+        :reduce(function(acc, x)
+            if x.name == "enderstorage:ender_storage" then
+                table.insert(acc, { itemInputId = x.sideId })
+            elseif x.name == "enderio:block_buffer" then
+                table.insert(acc, { itemOutputId = x.sideId })
+            end
+            return acc
+        end, {})
+end
+
+local function getItemMetaFromRemote(localInventory, transposer, configSideId, itemInputSideId, slot)
+    transposer.transferItem(configSideId, itemInputSideId, 1, slot, 1)
+    local itemSpec = localInventory.getItemMeta(slot)
+    transposer.transferItem(itemInputSideId, configSideId, 1, 1, slot)
+    return itemSpec
+end
+
+local function discoverConfig(localInventory, transposer, itemInputSideId)
+    local size = transposer.getInventorySize(CONFIG_SIDE_ID)
 
     local slots = fun.range(1, size)
 
     local knownRecipes = slots
         :map(function(slot)
-            local itemSpec = getItemSpec(transposer, itemInputSideId, slot)
+            local itemSpec = getItemMetaFromRemote(localInventory, transposer, CONFIG_SIDE_ID, itemInputSideId, slot)
             if itemSpec and itemSpec.pattern and itemSpec.pattern.outputs and itemSpec.pattern.inputs then
                 local fluid = string.match(itemSpec.pattern.outputs[1].displayName, "%a+")
                 local ingredients = itemSpec.pattern.inputs
@@ -26,30 +55,36 @@ local function generateConfig(transposer, itemInputSideId)
     }
 end
 
-local function createDevice(transposerWithId)
+local function createDeviceModel(localInventory, transposerWithId)
     local transposer = transposerWithId.transposer
     local id = transposerWithId.id
 
-    -- Discover sides (cubes have 6)
-    local sides =
-        fun.range(0, 5)
-        :map(function(x) return {sideId = x, name = t.transposer.getInventoryName(x)} end)
+    -- Discover sides 
+    local sides = discoverSides(transposer)
     
     -- Discover config
     local topSideId = 1 -- Assume 'top' is an inventory which contains config
-    local config = generateConfig(transposer, itemInputSideId)
+    local config = discoverConfig(transposer, itemInputSideId)
 
-    -- Final device object
+    -- Final device model
     return {
         id = id,
         config = config,
-        Output = sides.front.proxy,
-        ItemInput = sides.back.proxy,
-        FluidInput = sides.right.proxy
+        outputId = sides.itemOutputId,
+        itemInputId = sides.itemInputId,
+        fluidInputId = nil
     }
 end
 
+-- Exports
+return {
+    discoverSides = discoverSides,
+    getItemMetaFromRemote = getItemMetaFromRemote,
+    discoverConfig = discoverConfig,
+    createDeviceModel = createDeviceModel
+}
 
+--[[ 
 local directEnderchest = peripheral.wrap("left")
 local transposers =
     fun.iter(_.uniq(peripheral.getNames(), function(x) return x end))
@@ -71,7 +106,7 @@ plcs:each(function(t)
 end)
 
 transposers
-   :each(function(x) print(x.id) end)
+   :each(function(x) print(x.id) end) ]]
 
 --local plcs = _.map(transposer, function(t)
 --    local sides = 6
