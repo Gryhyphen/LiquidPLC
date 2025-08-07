@@ -1,0 +1,15 @@
+.lua_history
+.shell_history
+mbs.lua
+.mbs/bin/clear.lua
+.mbs/bin/lua.lua
+.mbs/bin/shell-worker.lua
+.mbs/bin/shell.lua
+.mbs/lib/readline.lua
+.mbs/lib/scroll_window.lua
+.mbs/lib/stack_trace.lua
+.mbs/modules/lua.lua
+.mbs/modules/pager.lua
+.mbs/modules/readline.lua
+.mbs/modules/shell.lua
+startup/00_mbs.lua
