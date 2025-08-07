@@ -17,9 +17,15 @@ local function discoverSides(transposer)
         :filter(function(x) return x ~= nil end)
         :reduce(function(acc, x)
             if x.name == "enderstorage:ender_storage" then
-                table.insert(acc, { itemInputId = x.sideId })
+                if acc.itemInputId ~= nil then
+                    error("Duplicate itemInputId detected: side " .. acc.itemInputId .. " and side " .. x.sideId)
+                end
+                acc.itemInputId = x.sideId
             elseif x.name == "enderio:block_buffer" then
-                table.insert(acc, { itemOutputId = x.sideId })
+                if acc.itemOutputId ~= nil then
+                    error("Duplicate itemOutputId detected: side " .. acc.itemOutputId .. " and side " .. x.sideId)
+                end
+                acc.itemOutputId = x.sideId
             end
             return acc
         end, {})
@@ -63,8 +69,7 @@ local function createDeviceModel(localInventory, transposerWithId)
     local sides = discoverSides(transposer)
     
     -- Discover config
-    local topSideId = 1 -- Assume 'top' is an inventory which contains config
-    local config = discoverConfig(transposer, itemInputSideId)
+    local config = discoverConfig(localInventory, transposer, sides.itemInputId)
 
     -- Final device model
     return {
