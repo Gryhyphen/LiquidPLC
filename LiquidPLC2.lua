@@ -69,7 +69,7 @@ end
 ---@field knownRecipes KnownRecipe[]  # Array of known recipes
 
 ---@class DeviceModel
----@field id string                  # Unique peripheral ID (e.g. "right", "back")
+---@field id string                  # Unique peripheral ID (a guid)
 ---@field config DeviceConfig        # Configuration object discovered from inventory
 ---@field outputId integer           # Side ID for item output
 ---@field itemInputId integer        # Side ID for item input
