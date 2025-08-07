@@ -61,6 +61,23 @@ local function discoverConfig(localInventory, transposer, itemInputSideId)
     }
 end
 
+---@class KnownRecipe
+---@field fluid string         # Fluid name extracted from item displayName
+---@field ingredients table    # List of input items (structure depends on your item format)
+
+---@class DeviceConfig
+---@field knownRecipes KnownRecipe[]  # Array of known recipes
+
+---@class DeviceModel
+---@field id string                  # Unique peripheral ID (e.g. "right", "back")
+---@field config DeviceConfig        # Configuration object discovered from inventory
+---@field outputId integer           # Side ID for item output
+---@field itemInputId integer        # Side ID for item input
+---@field fluidInputId integer?      # Optional side ID for fluid input (currently nil)
+
+---@param localInventory any         # Peripheral used to read item metadata
+---@param transposerWithId { id: string, transposer: any }  # Transposer and its ID
+---@return DeviceModel
 local function createDeviceModel(localInventory, transposerWithId)
     local transposer = transposerWithId.transposer
     local id = transposerWithId.id
