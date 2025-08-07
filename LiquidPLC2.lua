@@ -33,7 +33,7 @@ end
 
 local function getItemMetaFromRemote(localInventory, transposer, configSideId, itemInputSideId, slot)
     transposer.transferItem(configSideId, itemInputSideId, 1, slot, 1)
-    local itemSpec = localInventory.getItemMeta(slot)
+    local itemSpec = localInventory.getItemMeta(1)
     transposer.transferItem(itemInputSideId, configSideId, 1, 1, slot)
     return itemSpec
 end
