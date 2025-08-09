@@ -8,7 +8,8 @@ local Config = require "config"
 local meService = MeService.new(peripheral.wrap(Config.meSystemId))
 local deviceService = DeviceService.new(Config.discoverDataFilePath)
 local localMe = peripheral.wrap(Config.ccMeControllerId)
-local fluidSource = peripheral.wrap(Config.ccMeFluidInterfaceId)
+local liquidSource = peripheral.wrap(Config.ccMeFluidInterfaceId)
+local gasSource = peripheral.wrap(Config.gasExportBusId)
 
 local state = { workQueue = {}, currentFluids = {}}
 local function InputScan()
@@ -35,8 +36,11 @@ local function ExecuteProgramLogic()
             ingredientsRequested
             :partition(function(x) return util.getFluidFromDisplayName(x.displayName) end)
 
+        local gasIngredients, liquidIngredients =
+            fluidIngredients
+            :partition(function(x) return util.getGasFromDisplayName(x.displayName) end)
+
         if (#dryIngredients:totable() > 0) then
-            print(textutils.serialize(dryIngredients:totable()))
             dryIngredients
             :each(function(ingredient)
                 local success1, item = pcall(function()
@@ -64,17 +68,39 @@ local function ExecuteProgramLogic()
             transposer.transferItem(deviceModel.itemInputId, deviceModel.outputId, 64, 1)
         end
 
-        if(#fluidIngredients:totable() > 0) then
-            fluidIngredients
+        if(#liquidIngredients:totable() > 0) then
+            liquidIngredients
             :each(function(ingredient)
-                local fluidCodeName = string.lower(util.getFluidFromDisplayName(ingredient.displayName))
-                fluidSource.pushFluid(Config.localFluidInventoryId, 1000, fluidCodeName)
+                local liquidCodeName = string.lower(util.getFluidFromDisplayName(ingredient.displayName))
+                liquidSource.pushFluid(Config.localFluidInventoryId, 1000, liquidCodeName)
                 local transposer = peripheral.wrap(deviceModel.id)
                 transposer.transferFluid(deviceModel.fluidInputId, deviceModel.outputId, 1000)
                 -- clean up any remaining fluid
-                fluidSource.pullFluid(Config.localFluidInventoryId, 1000, fluidCodeName)
+                liquidSource.pullFluid(Config.localFluidInventoryId, 1000, liquidCodeName)
             end)
         end
+
+        if(#gasIngredients:totable() > 0) then
+            gasIngredients
+            :each(function(ingredient)
+                local gasName = util.getGasFromDisplayName(ingredient.displayName)
+                -- hardcoding gasses from the database because I'm lazy
+                -- (the database is essentially a lookup table)
+                local gasDatabaseIndex = Config.gasDatabaseLookupTable["Chlorine"]
+                gasSource.setGasExportConfiguration(Config.gasExportBusPartSlot, Config.gasDatabaseId, gasDatabaseIndex)
+                -- This is a HACK
+                -- It slows down the entire control loop
+                -- But since I'm not actively controlling the gas export with the computer
+                -- I just have to wait to let to transfer a little bit of gas
+                os.sleep(1)
+                -- This clears the gas, for some reason, idk.
+                -- But it works and I do want the gas to be cleared
+                gasSource.setGasExportConfiguration(Config.gasExportBusPartSlot,4)
+            end)
+        end
+
+        --gasExport.setGasExportConfiguration(5,'Config.databaseId',1)
+        -- clear with gasExport.setGasExportConfiguration(5,4)
 
 
     end)
