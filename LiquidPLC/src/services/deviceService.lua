@@ -32,19 +32,28 @@ function DeviceService:getRefillTasks(currentFluids)
 
     for _, device in ipairs(self.deviceDataCache) do
         for _, recipe in ipairs(device.deviceConfig.knownRecipes) do
+            local foundFluid = nil
+
             for _, fluid in ipairs(currentFluids) do
-                if fluid.label == recipe.fluid and fluid.amount < 5000 then
-                    print("Refill needed for fluid:", fluid.label)
-                    table.insert(tasks, {
-                        ingredients = recipe.ingredients,
-                        device = device
-                    })
+                if fluid.label == recipe.fluid then
+                    foundFluid = fluid
+                    break
                 end
+            end
+
+            -- If fluid is missing or amount is too low, trigger refill
+            if not foundFluid or foundFluid.amount < 5000 then
+                print("Refill needed for fluid:", recipe.fluid)
+                table.insert(tasks, {
+                    ingredients = recipe.ingredients,
+                    device = device
+                })
             end
         end
     end
 
     return tasks
 end
+
 
 return DeviceService
