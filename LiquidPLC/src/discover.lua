@@ -72,7 +72,7 @@ end
 
 ---@class DeviceModel
 ---@field id string                  # Unique peripheral ID (a guid)
----@field config DeviceConfig        # Configuration object discovered from inventory
+---@field deviceConfig DeviceConfig  # Configuration object discovered from inventory
 ---@field outputId integer           # Side ID for item output
 ---@field itemInputId integer        # Side ID for item input
 ---@field fluidInputId integer?      # Optional side ID for fluid input (currently nil)
@@ -88,19 +88,19 @@ local function createDeviceModel(localInventory, transposerWithId)
     local sides = discoverSides(transposer)
     
     -- Discover config
-    local config = discoverConfig(localInventory, transposer, sides.itemInputId)
+    local deviceConfig = discoverConfig(localInventory, transposer, sides.itemInputId)
 
     -- Final device model
     return {
         id = id,
-        config = config,
+        deviceConfig = deviceConfig,
         outputId = sides.itemOutputId,
         itemInputId = sides.itemInputId,
         fluidInputId = nil
     }
 end
 
-if (package.loaded["discover"] == nil) then
+if (type(package.loaded['discover']) ~= 'table') then
     print("Running as a script")
     local transposers =
         fun.iter(_.uniq(peripheral.getNames(), function(x) return x end))
@@ -116,11 +116,11 @@ if (package.loaded["discover"] == nil) then
         :map(function(x) return createDeviceModel(localInventory, x) end)
         :totable()
 
-    local file = fs.open("transposers_data.txt", "w")
+    local file = fs.open("liquidplc_discover_data.txt", "w")
     if file then
         file.write(textutils.serialize(transposers))
         file.close()
-        print("Data written to transposers_data.txt")
+        print("Data written to liquidplc_discover_data.txt")
     else
         print("Failed to open file for writing")
     end
