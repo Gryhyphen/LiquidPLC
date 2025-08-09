@@ -3,6 +3,7 @@ local fun = require "fun"
 local _ = require "lodash" -- LuaLodash
 local config = require "config"
 local pretty = require "cc.pretty"
+local util = require "util"
 
 local CONFIG_SIDE_ID = 1 -- top is always the config
 
@@ -49,7 +50,8 @@ local function discoverConfig(localInventory, transposer, itemInputSideId)
         :map(function(slot)
             local itemSpec = getItemMetaFromRemote(localInventory, transposer, CONFIG_SIDE_ID, itemInputSideId, slot)
             if itemSpec and itemSpec.pattern and itemSpec.pattern.outputs and itemSpec.pattern.inputs then
-                local fluid = string.match(itemSpec.pattern.outputs[1].displayName, "%a+")
+                local displayName = itemSpec.pattern.outputs[1].displayName
+                local fluid = util.getFluidFromDisplayName(displayName)
                 local ingredients = itemSpec.pattern.inputs
                 return { fluid = fluid, ingredients = ingredients }
             end
