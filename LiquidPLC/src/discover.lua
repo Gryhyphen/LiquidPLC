@@ -13,7 +13,14 @@ local function discoverSides(transposer)
         :map(function(x)
             local name, err = transposer.getInventoryName(x)
             if err ~= nil then
-                return nil -- skip sides with no inventory
+                -- ONLY if this side is not an inventory
+                -- Try to detect Ender Tank via tank level
+                local ok, tankLevel = pcall(transposer.getTankLevel, x, 1)
+                if ok then
+                    return { sideId = x, name = "enderstorage:ender_tank" }
+                else
+                    return nil -- skip sides with no inventory and no tank
+                end
             end
             return { sideId = x, name = name }
         end)
@@ -29,12 +36,30 @@ local function discoverSides(transposer)
                     error("Duplicate itemOutputId detected: side " .. acc.itemOutputId .. " and side " .. x.sideId)
                 end
                 acc.itemOutputId = x.sideId
+            elseif x.name == "thermalexpansion:machine" then
+                -- just assuming that this must be a sequential fabricator
+                if acc.itemOutputId ~= nil then
+                    error("Duplicate itemOutputId detected: side " .. acc.itemOutputId .. " and side " .. x.sideId)
+                end
+                acc.itemOutputId = x.sideId
+            elseif x.name == "thermalexpansion:device" then
+                -- just assuming that this must be a fluid allocator
+                if acc.itemOutputId ~= nil then
+                    error("Duplicate itemOutputId detected: side " .. acc.itemOutputId .. " and side " .. x.sideId)
+                end
+                acc.itemOutputId = x.sideId
+            elseif x.name == "enderstorage:ender_tank" then
+                if acc.fluidInputId ~= nil then
+                    error("Duplicate fluidInputId detected: side " .. acc.itemInputId .. " and side " .. x.sideId)
+                end
+                acc.fluidInputId = x.sideId
             end
             return acc
         end, {})
 end
 
 local function getItemMetaFromRemote(localInventory, transposer, configSideId, itemInputSideId, slot)
+    assert(itemInputSideId ~= nil, "Missing enderchest on a transposer, needed to read config")
     transposer.transferItem(configSideId, itemInputSideId, 1, slot, 1)
     local itemSpec = localInventory.getItemMeta(1)
     transposer.transferItem(itemInputSideId, configSideId, 1, 1, slot)
@@ -98,7 +123,7 @@ local function createDeviceModel(localInventory, transposerWithId)
         deviceConfig = deviceConfig,
         outputId = sides.itemOutputId,
         itemInputId = sides.itemInputId,
-        fluidInputId = nil
+        fluidInputId = sides.fluidInputId
     }
 end
 
