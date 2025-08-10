@@ -3,22 +3,30 @@ local fun = require "fun"
 local util = require "util"
 local DeviceService = require "services.deviceService"
 local MeService = require "services.meService"
+local IntegratedDynamicsCraftSensorService = require "services.integratedDynamicsCraftSensorService"
 local Config = require "config"
 
 local meService = MeService.new(peripheral.wrap(Config.meSystemId))
 local deviceService = DeviceService.new(Config.discoverDataFilePath)
+local integratedDynamicsCraftSensorService = IntegratedDynamicsCraftSensorService.new(Config.integratedDynamicsMeSensorId, Config.integratedDynamicsMeSensorSide)
 local localMe = peripheral.wrap(Config.ccMeControllerId)
 local liquidSource = peripheral.wrap(Config.ccMeFluidInterfaceId)
 local gasSource = peripheral.wrap(Config.gasExportBusId)
 
-local state = { workQueue = {}, currentFluids = {}}
+
+local state = { workQueue = {}, currentFluids = {}, currentMeCrafts = {}}
 local function InputScan()
     state["currentFluids"] = meService:getAllLiquids()
+    state["currentMeCrafts"] = integratedDynamicsCraftSensorService:getActiveCrafts()
+    --print(textutils.serialize(integratedDynamicsCraftSensorService:getActiveCrafts()))
 end
 
 local function ProgramScan()
     deviceService:refreshCache()
-    state["workQueue"] = deviceService:getRefillTasks(state["currentFluids"])
+    state["workQueue"] =
+        fun.iter(deviceService:getRefillTasks(state["currentFluids"]))
+        :chain(deviceService:getActiveCraftLiquidSupportTasks(state["currentMeCrafts"]))
+        :totable()
 end
 
 local function ExecuteProgramLogic()
@@ -71,7 +79,7 @@ local function ExecuteProgramLogic()
         if(#liquidIngredients:totable() > 0) then
             liquidIngredients
             :each(function(ingredient)
-                local liquidCodeName = string.lower(util.getFluidFromDisplayName(ingredient.displayName))
+                local liquidCodeName = string.gsub(string.lower(util.getFluidFromDisplayName(ingredient.displayName)), "%s+", "")
                 liquidSource.pushFluid(Config.localFluidInventoryId, 1000, liquidCodeName)
                 local transposer = peripheral.wrap(deviceModel.id)
                 transposer.transferFluid(deviceModel.fluidInputId, deviceModel.outputId, 1000)

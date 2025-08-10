@@ -74,13 +74,35 @@ local function discoverConfig(localInventory, transposer, itemInputSideId)
     local knownRecipes = slots
         :map(function(slot)
             local itemSpec = getItemMetaFromRemote(localInventory, transposer, CONFIG_SIDE_ID, itemInputSideId, slot)
-            if itemSpec and itemSpec.pattern and itemSpec.pattern.outputs and itemSpec.pattern.inputs then
-                local displayName = itemSpec.pattern.outputs[1].displayName
-                local fluid = util.getFluidFromDisplayName(displayName)
+
+            if not (itemSpec and itemSpec.pattern and itemSpec.pattern.outputs and itemSpec.pattern.inputs) then
+                return nil
+            end
+
+            local displayName = itemSpec.pattern.outputs[1].displayName
+
+            -- Test for fluid
+            -- (Really, fluid should be renamed 'output', but I don't want to break working code that assumes fluid)
+            -- (Right now, fluid will be 'muterially exclusive' with itemCraftingResult)
+            -- (will refactor later)
+            local fluid = util.getFluidFromDisplayName(displayName)
+            if fluid ~= nil then
                 local ingredients = itemSpec.pattern.inputs
                 return { fluid = fluid, ingredients = ingredients }
             end
-            return nil
+
+            -- Test for itemCraftingResult
+            -- (Really, should have some sort of 'handler' maybe? Or 'patternType'?)
+            -- (Because itemCraftingResult will use the 'detect current items being crafted' integrated dynamics compat)
+            -- (when all fluids only use AE system "when fluid is below level" detection)
+            local itemCraftingResult = itemSpec.pattern.outputs[1].displayName
+            local ingredients = itemSpec.pattern.inputs
+            return { itemCraftingResult = itemCraftingResult, ingredients = ingredients}
+
+            -- The result of this is essentially a discriminated union
+            -- except lua type system is shit and doesn't automatically flag issues where I haven't handled it correctly
+            -- AND I've also not built the system to expect the type to be a discriminated union
+            -- so it's pretty jank (luckily the orginal fluid system explicitly looks for fluids so will filter out the 'itemCraftingResult' elements)
         end)
         :filter(function(recipe) return recipe ~= nil end)
         :totable()
@@ -132,10 +154,12 @@ if (type(package.loaded['discover']) ~= 'table') then
     local transposers =
         fun.iter(_.uniq(peripheral.getNames(), function(x) return x end))
         :filter(function(x) return peripheral.getType(x) == "transposer" end)
+
+    -- Ensuring none of the blacklisted transposers appear
+    -- (Like those used by integratedDynamicsCraftSensor)
+    transposers =
+        fun.iter(_.difference(transposers:totable(), config.deviceTransposerBlacklist))
         :map(function(x) return {id = x, transposer = peripheral.wrap(x)} end)
-    
-    --transposers = fun.iter(_.difference(transposers:totable(), config.deviceTransposerBlacklist))
-    --    :map(function(x) return {id = x, transposer = peripheral.wrap(x)} end)
     
     local localInventory = peripheral.wrap(config.localInventorySide)
     transposers =
