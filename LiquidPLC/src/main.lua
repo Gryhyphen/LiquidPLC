@@ -85,7 +85,7 @@ local function ExecuteProgramLogic()
         if(#liquidIngredients:totable() > 0) then
             liquidIngredients
             :each(function(ingredient)
-                local liquidCodeName = string.gsub(string.lower(util.getFluidFromDisplayName(ingredient.displayName)), "%s+", "")
+                local liquidCodeName = util.getFluidCodeNameFromDisplayName(ingredient.displayName)
                 liquidSource.pushFluid(Config.localFluidInventoryId, 1000, liquidCodeName)
                 local transposer = peripheral.wrap(deviceModel.id)
                 transposer.transferFluid(deviceModel.fluidInputId, deviceModel.outputId, 1000)

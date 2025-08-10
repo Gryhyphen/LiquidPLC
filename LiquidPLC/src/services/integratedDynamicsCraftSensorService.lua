@@ -34,8 +34,14 @@ function IntegratedDynamicsCraftSensorService:getActiveCrafts()
             -- This part is a hack because I messed up the ID sensor
             -- I should probably write the ID sensor to use labels instead
             -- of the minecraft id
+            -- UPDATE: This is actually a limitation of integrated dynamics
+            --         We can only get the level of detail of the ID
+            --         no other info is available
             if label == "libvulpes:productingot" then
                 return "Titanium Ingot"
+            end
+            if label == "redstonearsenal:storage" then
+                return "Flux Crystal Block"
             end
             error("unable to match label '" .. label .. "'")
         end)
