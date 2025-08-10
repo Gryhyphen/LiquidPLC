@@ -74,6 +74,12 @@ local function ExecuteProgramLogic()
 
             local transposer = peripheral.wrap(deviceModel.id)
             transposer.transferItem(deviceModel.itemInputId, deviceModel.outputId, 64, 1)
+
+            -- Clearing away any other items in localInventory/ the enderchest
+            -- for the next work queue task
+            localMe.pullItems(Config.localInventorySide, 1, 64)
+            localMe.pullItems(Config.localInventorySide, 2, 64)
+            localMe.pullItems(Config.localInventorySide, 3, 64)
         end
 
         if(#liquidIngredients:totable() > 0) then
