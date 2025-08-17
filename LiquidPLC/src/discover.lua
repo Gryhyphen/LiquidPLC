@@ -28,29 +28,29 @@ local function discoverSides(transposer)
         :reduce(function(acc, x)
             if x.name == "enderstorage:ender_storage" then
                 if acc.itemInputId ~= nil then
-                    error("Duplicate itemInputId detected: side " .. acc.itemInputId .. " and side " .. x.sideId)
+                    error("Duplicate itemInputId detected: side " .. tostring(acc.itemInputId) .. " and side " .. tostring(x.sideId))
                 end
                 acc.itemInputId = x.sideId
             elseif x.name == "enderio:block_buffer" then
                 if acc.itemOutputId ~= nil then
-                    error("Duplicate itemOutputId detected: side " .. acc.itemOutputId .. " and side " .. x.sideId)
+                    error("Duplicate itemOutputId detected: side " .. tostring(acc.itemOutputId) .. " and side " .. tostring(x.sideId))
                 end
                 acc.itemOutputId = x.sideId
             elseif x.name == "thermalexpansion:machine" then
                 -- just assuming that this must be a sequential fabricator
                 if acc.itemOutputId ~= nil then
-                    error("Duplicate itemOutputId detected: side " .. acc.itemOutputId .. " and side " .. x.sideId)
+                    error("Duplicate itemOutputId detected: side " .. tostring(acc.itemOutputId) .. " and side " .. tostring(x.sideId))
                 end
                 acc.itemOutputId = x.sideId
             elseif x.name == "thermalexpansion:device" then
                 -- just assuming that this must be a fluid allocator
                 if acc.itemOutputId ~= nil then
-                    error("Duplicate itemOutputId detected: side " .. acc.itemOutputId .. " and side " .. x.sideId)
+                    error("Duplicate itemOutputId detected: side " .. tostring(acc.itemOutputId) .. " and side " .. tostring(x.sideId))
                 end
                 acc.itemOutputId = x.sideId
             elseif x.name == "enderstorage:ender_tank" then
                 if acc.fluidInputId ~= nil then
-                    error("Duplicate fluidInputId detected: side " .. acc.itemInputId .. " and side " .. x.sideId)
+                    error("Duplicate fluidInputId detected: side " .. tostring(acc.itemInputId) .. " and side " .. tostring(x.sideId))
                 end
                 acc.fluidInputId = x.sideId
             end
