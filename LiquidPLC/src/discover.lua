@@ -31,19 +31,12 @@ local function discoverSides(transposer)
                     error("Duplicate itemInputId detected: side " .. tostring(acc.itemInputId) .. " and side " .. tostring(x.sideId))
                 end
                 acc.itemInputId = x.sideId
-            elseif x.name == "enderio:block_buffer" then
-                if acc.itemOutputId ~= nil then
-                    error("Duplicate itemOutputId detected: side " .. tostring(acc.itemOutputId) .. " and side " .. tostring(x.sideId))
-                end
-                acc.itemOutputId = x.sideId
-            elseif x.name == "thermalexpansion:machine" then
-                -- just assuming that this must be a sequential fabricator
-                if acc.itemOutputId ~= nil then
-                    error("Duplicate itemOutputId detected: side " .. tostring(acc.itemOutputId) .. " and side " .. tostring(x.sideId))
-                end
-                acc.itemOutputId = x.sideId
-            elseif x.name == "thermalexpansion:device" then
-                -- just assuming that this must be a fluid allocator
+            elseif (
+                x.name == "enderio:block_buffer"
+                or x.name == "thermalexpansion:machine" -- just assuming that this must be a sequential fabricator
+                or x.name == "thermalexpansion:device" -- just assuming that this must be a fluid allocator
+                or x.name == "ic2.te" -- Assuming this is a wooden storage box
+            ) then
                 if acc.itemOutputId ~= nil then
                     error("Duplicate itemOutputId detected: side " .. tostring(acc.itemOutputId) .. " and side " .. tostring(x.sideId))
                 end
