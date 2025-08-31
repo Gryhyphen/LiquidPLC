@@ -1,6 +1,7 @@
 require "bootstrap"
 local fun = require "fun"
 local util = require "util"
+local _ = require "lodash" -- LuaLodash
 local DeviceService = require "services.deviceService"
 local MeService = require "services.meService"
 local IntegratedDynamicsCraftSensorService = require "services.integratedDynamicsCraftSensorService"
@@ -23,9 +24,22 @@ end
 
 local function ProgramScan()
     deviceService:refreshCache()
-    state["workQueue"] =
+
+    local allTasks =
         fun.iter(deviceService:getRefillTasks(state["currentFluids"]))
         :chain(deviceService:getActiveCraftLiquidSupportTasks(state["currentMeCrafts"]))
+        :totable()
+
+    -- Group tasks by device ID
+    local grouped = _.groupBy(allTasks, function(task)
+        return task.device.id
+    end)
+
+    -- Take the first task from each device group
+    -- Tasks should be scanned in the order in which they are defined
+    -- in the configuration chest (i.e. higher priority tasks)
+    state["workQueue"] = fun.iter(grouped)
+        :map(function(_, group) return group[1] end)
         :totable()
 end
 
