@@ -11,8 +11,11 @@ local meService = MeService.new(peripheral.wrap(Config.meSystemId))
 local deviceService = DeviceService.new(Config.discoverDataFilePath)
 local integratedDynamicsCraftSensorService = IntegratedDynamicsCraftSensorService.new(Config.integratedDynamicsMeSensorId, Config.integratedDynamicsMeSensorSide)
 local localMe = peripheral.wrap(Config.ccMeControllerId)
-local liquidSource = peripheral.wrap(Config.ccMeFluidInterfaceId)
+
 local gasSource = peripheral.wrap(Config.gasExportBusId)
+
+-- local liquidSource = peripheral.wrap(Config.ccMeFluidInterfaceId)
+local liquidSources = { peripheral.find('appliedenergistics2:fluid_interface') }
 
 
 local state = { workQueue = {}, currentFluids = {}, currentMeCrafts = {}}
@@ -56,6 +59,7 @@ local function ExecuteProgramLogic()
 
         local fluidIngredients, dryIngredients =
             ingredientsRequested
+            --:map(function(x,c) print(textutils.serialize(x),textutils.serialize(c)); return x; end)
             :partition(function(x) return util.getFluidFromDisplayName(x.displayName) end)
 
         local gasIngredients, liquidIngredients =
@@ -100,7 +104,25 @@ local function ExecuteProgramLogic()
             liquidIngredients
             :each(function(ingredient)
                 local liquidCodeName = util.getFluidCodeNameFromDisplayName(ingredient.displayName)
+                
+                local potentialLiquidSources = fun.iter(liquidSources)
+                    :filter(function(x)
+                        local hasFluid = fun.iter(x.getTanks())
+                            :any(function(y) return y.name == liquidCodeName end)
+                        return hasFluid
+                    end)
+                    :totable()
+
+                -- Ensure exactly one match
+                if (#potentialLiquidSources ~= 1) then
+                    error("Expected exactly one liquid source for '" .. liquidCodeName .. "', found " .. #potentialLiquidSources)
+                end
+
+                local liquidSource = potentialLiquidSources[1]
+                
                 liquidSource.pushFluid(Config.localFluidInventoryId, 1000, liquidCodeName)
+                -- TODO: don't transfer fluid if it would put it over 6000 in the transposer output
+                -- as soon as any fluid hits the 8000 cap, stuff breaks
                 local transposer = peripheral.wrap(deviceModel.id)
                 transposer.transferFluid(deviceModel.fluidInputId, deviceModel.outputId, 1000)
                 -- clean up any remaining fluid

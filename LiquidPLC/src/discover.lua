@@ -51,10 +51,12 @@ local function discoverSides(transposer)
         end, {})
 end
 
+-- ItemBus or ItemChannel would probably have been a better name then localInventory
 local function getItemMetaFromRemote(localInventory, transposer, configSideId, itemInputSideId, slot)
     assert(itemInputSideId ~= nil, "Missing enderchest on a transposer, needed to read config")
     transposer.transferItem(configSideId, itemInputSideId, 1, slot, 1)
     local itemSpec = localInventory.getItemMeta(1)
+    -- print(textutils.serialize(itemSpec))
     transposer.transferItem(itemInputSideId, configSideId, 1, 1, slot)
     return itemSpec
 end
