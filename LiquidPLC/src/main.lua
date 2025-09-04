@@ -119,11 +119,19 @@ local function ExecuteProgramLogic()
                 end
 
                 local liquidSource = potentialLiquidSources[1]
-                
-                liquidSource.pushFluid(Config.localFluidInventoryId, 1000, liquidCodeName)
-                -- TODO: don't transfer fluid if it would put it over 6000 in the transposer output
-                -- as soon as any fluid hits the 8000 cap, stuff breaks
                 local transposer = peripheral.wrap(deviceModel.id)
+                
+                local maxFluidInTank = fun.iter(transposer.getFluidInTank(deviceModel.outputId))
+                    :map(function(x) return x.amount end)
+                    :max()
+                
+                if (maxFluidInTank >= 6000) then
+                    -- don't transfer fluid if it would put it over 6000 in the transposer output
+                    -- as soon as any fluid hits the 8000 cap, stuff breaks
+                    return
+                end
+
+                liquidSource.pushFluid(Config.localFluidInventoryId, 1000, liquidCodeName)
                 transposer.transferFluid(deviceModel.fluidInputId, deviceModel.outputId, 1000)
                 -- clean up any remaining fluid
                 liquidSource.pullFluid(Config.localFluidInventoryId, 1000, liquidCodeName)
